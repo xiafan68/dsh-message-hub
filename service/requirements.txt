@@ -1,0 +1,8 @@
+# 内置订阅引擎的运行时依赖（由插件自动装进 <runtimeDir>/pyenv）
+#
+# 版本区间与上游 pyproject.toml 保持一致：宽到能拿到补丁，窄到不会跨大版本漂移。
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+httpx>=0.27,<1
+beautifulsoup4>=4.12,<5
+PyYAML>=6,<7

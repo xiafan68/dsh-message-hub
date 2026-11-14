@@ -1,0 +1,21 @@
+# 本地运行配置（从服务器复制过来后新建）。
+# 订阅源实际保存在数据库 data/subscriptions.db 的 monitors 表中，
+# 启动时 sync_monitors 只会 INSERT OR IGNORE 追加，不会删除已有监控。
+# 因此这里留空，避免再写入 example.com 的示例源。
+defaults:
+  poll_interval_minutes: 30
+  delivery: daily_digest
+  destination: slack
+
+sources: []
+
+destinations:
+  slack:
+    type: slackcli
+    recipient_id_env: MESSAGE_SUBSCRIPTIONS_SLACK_RECIPIENT_ID
+
+policies:
+  experimental_sources:
+    failure_mode: skip_and_alert
+  secrets:
+    allow_inline_values: false

@@ -1,0 +1,78 @@
+{
+  "name": "@dsh-external/dsh-message-hub",
+  "version": "0.3.0",
+  "private": false,
+  "description": "Message Hub：把 RSS / 网页 / GitHub Releases 订阅接进对话。插件内置 Python 采集引擎（service/），首次启动自动建 venv、装依赖并拉起服务；宿主半边代理 BFF 并向模型暴露 hub_* 工具，浏览器半边渲染三栏面板，选中条目可一键写进对话草稿。",
+  "type": "module",
+  "main": "./lib/index.js",
+  "author": "xiafan68",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xiafan68/dsh-message-hub.git"
+  },
+  "homepage": "https://github.com/xiafan68/dsh-message-hub#readme",
+  "bugs": {
+    "url": "https://github.com/xiafan68/dsh-message-hub/issues"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "dsh-plugin",
+    "rss",
+    "feed",
+    "subscription",
+    "reader",
+    "notify",
+    "github-releases",
+    "python"
+  ],
+  "files": [
+    "lib",
+    "src",
+    "service",
+    "skills",
+    "scripts",
+    "tests",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "exports": {
+    ".": {
+      "default": "./lib/index.js"
+    },
+    "./client": {
+      "default": "./lib/client.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.0.1-rc.1 <0.1.0 || >=0.1.0-rc.1 <0.2.0-0",
+    "@deepseek-ai/cordis": ">=4.0.0-rc.1 <5.0.0-0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-tools": {
+      "optional": true
+    },
+    "@deepseek-ai/cordis": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build-client.mjs",
+    "test": "node tests/fiber_contract_selftest.mjs && node tests/engine_selftest.mjs && node tests/skill_bundle_selftest.mjs && node tests/service_selftest.mjs && node tests/server_selftest.mjs && node tests/client_bundle_selftest.mjs && node tests/e2e_host_smoke.mjs && node tests/submission_selftest.mjs",
+    "check": "node scripts/build-client.mjs --check && npm test"
+  }
+}

@@ -1,0 +1,24 @@
+# 提交给 awesome-dsh-plugin 的条目草稿
+#
+# 用法：把本文件原样复制到 awesome-dsh-plugin 仓库的
+#   data/plugins/xiafan68__dsh-message-hub.yml
+# 文件名格式 `<owner>__<repo>.yml`，与下面的 name / url 必须一致。
+#
+# 规则来源：https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/blob/main/contributing.md
+# - 仓库必须声明 dsh.bundle（本仓库声明的是 ./cordis.patch.yml）
+# - 描述只写功能、不带营销词，且必须与代码真实行为一致
+# - 含 ": " 的描述值必须加引号，否则 YAML 会当成嵌套键
+
+url: https://github.com/xiafan68/dsh-message-hub
+name: xiafan68/dsh-message-hub
+
+# 订阅与推送：把多个来源的更新收进面板，并交给模型/定时任务使用。
+category: notify
+
+description:
+  en: "Brings RSS feeds, web pages and GitHub releases into a three-pane panel and exposes them to the agent as hub_* tools; the bundled Python collector starts on demand and refreshes sources on a timer."
+  zh: "把 RSS、网页和 GitHub Releases 订阅收进三栏面板，并以 hub_* 工具交给模型；插件自带 Python 采集引擎，按需拉起并定时刷新订阅源。"
+
+# 可选：GitHub 托管的位图（png/jpg/jpeg/webp），约 96px 显示，方形最清楚。
+# 不写则回退到作者头像；SVG 与第三方图床会被拒绝。
+icon: https://raw.githubusercontent.com/xiafan68/dsh-message-hub/main/assets/icon-180.png

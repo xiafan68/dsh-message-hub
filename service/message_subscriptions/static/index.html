@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Message Subscriptions 管理控制台">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>消息订阅 · 控制台</title>
+  <link rel="stylesheet" href="/assets/styles.css?v=20260719-8">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/" aria-label="消息订阅首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M7 9.5h18v12H13l-6 5v-17Z"/><path d="M11 14h10M11 18h7"/></svg>
+        </span>
+        <span><strong>消息订阅</strong><small>Message Flow</small></span>
+      </a>
+
+      <nav class="main-nav" aria-label="主导航">
+        <button class="nav-item active" data-view="overview">
+          <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v10h-6zM4 14h6v6H4zM14 18h6v2h-6z"/></svg>
+          <span>总览</span>
+        </button>
+        <button class="nav-item" data-view="monitors">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M8 12h2l1.5-3 2.5 6 1.5-3H18"/></svg>
+          <span>监控任务</span><span class="nav-count" id="nav-monitor-count">0</span>
+        </button>
+        <button class="nav-item" data-view="runs">
+          <svg viewBox="0 0 24 24"><path d="M5 5v14h14M8 15l3-4 3 2 4-6"/></svg>
+          <span>运行记录</span>
+        </button>
+        <button class="nav-item" data-view="feed">
+          <svg viewBox="0 0 24 24"><path d="M6 5c7 0 13 6 13 13M6 11c4 0 7 3 7 7"/><circle cx="6" cy="18" r="1"/></svg>
+          <span>Feed 流</span>
+        </button>
+        <button class="nav-item" data-view="daily">
+          <svg viewBox="0 0 24 24"><path d="m12 3 2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z"/></svg>
+          <span>每日精选</span>
+        </button>
+        <button class="nav-item" data-view="weekly">
+          <svg viewBox="0 0 24 24"><path d="M5 5h14v15H5zM8 3v4M16 3v4M5 10h14"/><path d="m9 15 2 2 4-4"/></svg>
+          <span>每周精选</span>
+        </button>
+        <button class="nav-item" data-view="settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.7-.6-1.4.9-1.9-2.1-2.1-1.9.9-1.4-.6L10.5 3h-3l-.7 2-1.4.6-1.9-.9-2.1 2.1.9 1.9-.6 1.4-2 .7v3l2 .7.6 1.4-.9 1.9 2.1 2.1 1.9-.9 1.4.6.7 2h3l.7-2 1.4-.6 1.9.9 2.1-2.1-.9-1.9.6-1.4z" transform="translate(1.5 0) scale(.85)"/></svg>
+          <span>关注方向</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <a class="nav-link" href="/docs" target="_blank">
+          <svg viewBox="0 0 24 24"><path d="M5 4h10l4 4v12H5zM15 4v5h4M8 13h8M8 16h6"/></svg>
+          API 文档
+        </a>
+        <div class="system-pill"><span class="pulse-dot"></span><span>服务运行中</span><small>:4001</small></div>
+      </div>
+    </aside>
+
+    <div class="main-wrap">
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menu-button" aria-label="打开导航">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <div class="breadcrumb"><span>工作台</span><i>/</i><strong id="current-page">总览</strong></div>
+        <div class="topbar-actions">
+          <span class="last-updated" id="last-updated">正在同步…</span>
+          <button class="icon-button" id="refresh-button" aria-label="刷新数据" title="刷新数据">
+            <svg viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5"/><path d="M18.5 9A7 7 0 0 0 6 7l-2 4M5.5 15A7 7 0 0 0 18 17l2-4"/></svg>
+          </button>
+          <div class="avatar" title="本地管理员">管</div>
+        </div>
+      </header>
+
+      <main class="content">
+        <section class="view active" id="view-overview">
+          <div class="page-heading">
+            <div><p class="eyebrow">OPERATIONS CENTER</p><h1>订阅运行总览</h1><p>查看采集链路健康度与最新内容流转。</p></div>
+            <button class="primary-button" data-go="monitors">
+              查看全部监控
+              <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
+          </div>
+
+          <div class="metric-grid" aria-label="关键指标">
+            <article class="metric-card mint">
+              <div class="metric-top"><span>活跃监控</span><span class="metric-icon"><svg viewBox="0 0 24 24"><path d="M5 12h3l2-5 4 10 2-5h3"/></svg></span></div>
+              <strong id="metric-active">—</strong><small><span class="good-dot"></span>正常执行中</small>
+            </article>
+            <article class="metric-card amber">
+              <div class="metric-top"><span>需要关注</span><span class="metric-icon"><svg viewBox="0 0 24 24"><path d="M12 4 3 20h18L12 4Z"/><path d="M12 10v4M12 17h.01"/></svg></span></div>
+              <strong id="metric-attention">—</strong><small>降级或异常来源</small>
+            </article>
+            <article class="metric-card blue">
+              <div class="metric-top"><span>24 小时新增</span><span class="metric-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></div>
+              <strong id="metric-new">—</strong><small>新采集条目</small>
+            </article>
+            <article class="metric-card violet">
+              <div class="metric-top"><span>累计条目</span><span class="metric-icon"><svg viewBox="0 0 24 24"><path d="M5 5h14v14H5zM8 9h8M8 13h8M8 17h5"/></svg></span></div>
+              <strong id="metric-items">—</strong><small>已去重归档</small>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel activity-panel">
+              <div class="panel-heading"><div><h2>最近活动</h2><p>采集器的最新运行结果</p></div><button class="text-button" data-go="runs">全部记录</button></div>
+              <div class="activity-list" id="overview-activity"><div class="skeleton-list"></div></div>
+            </section>
+            <section class="panel source-panel">
+              <div class="panel-heading"><div><h2>来源构成</h2><p>按采集方式统计</p></div></div>
+              <div class="source-chart" id="source-chart">
+                <div class="donut" id="source-donut"><span><strong>0</strong><small>来源</small></span></div>
+                <div class="legend" id="source-legend"></div>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel compact-monitor-panel">
+            <div class="panel-heading"><div><h2>监控状态</h2><p>重点来源快速视图</p></div><button class="text-button" data-go="monitors">管理监控</button></div>
+            <div class="monitor-strip" id="monitor-strip"><div class="skeleton-list"></div></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-monitors">
+          <div class="page-heading monitor-heading">
+            <div><p class="eyebrow">MONITORS</p><h1>监控任务</h1><p>集中查看所有订阅来源及运行状态。</p></div>
+            <button class="primary-button" id="add-monitor-button" type="button">+ 新增监控</button>
+          </div>
+          <div class="toolbar panel">
+            <label class="search-box">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+              <input id="monitor-search" type="search" placeholder="搜索名称、标签或 ID" autocomplete="off">
+            </label>
+            <div class="filter-tabs" id="status-filters" aria-label="状态筛选">
+              <button class="active" data-status="all">全部</button>
+              <button data-status="active">运行中</button>
+              <button data-status="degraded">需关注</button>
+              <button data-status="paused">已暂停</button>
+            </div>
+          </div>
+          <div class="monitor-table-wrap panel">
+            <table class="monitor-table">
+              <thead><tr><th>监控来源</th><th>状态</th><th>采集方式</th><th>条目</th><th>最近运行</th><th></th></tr></thead>
+              <tbody id="monitor-table-body"></tbody>
+            </table>
+            <div class="empty-state hidden" id="monitor-empty">
+              <svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="17"/><path d="M17 24h14M24 17v14"/></svg>
+              <h3>没有匹配的监控</h3><p>尝试调整搜索词或状态筛选。</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-runs">
+          <div class="page-heading">
+            <div><p class="eyebrow">RUN HISTORY</p><h1>运行记录</h1><p>追踪每次采集的结果、数量和错误。</p></div>
+          </div>
+          <section class="panel run-panel">
+            <div class="run-list-header"><span>来源与时间</span><span>状态</span><span>抓取</span><span>新增</span></div>
+            <div id="run-list"><div class="skeleton-list"></div></div>
+          </section>
+        </section>
+
+        <section class="view" id="view-feed">
+          <div class="page-heading"><div><p class="eyebrow">CONTENT STREAM</p><h1>Feed 内容流</h1><p>按来源和时间浏览已采集、去重的全部内容。</p></div><div class="heading-note"><span>匹配条目</span><strong id="feed-total">0</strong></div></div>
+          <div class="feed-toolbar panel">
+            <label><span>来源</span><select id="feed-source"><option value="">全部来源</option></select></label>
+            <label><span>开始日期</span><input type="date" id="feed-from"></label>
+            <label><span>结束日期</span><input type="date" id="feed-to"></label>
+            <label><span>收藏状态</span><select id="feed-liked"><option value="">全部</option><option value="liked">已收藏</option><option value="unliked">未收藏</option></select></label>
+            <label class="feed-search"><span>关键词</span><input type="search" id="feed-query" placeholder="搜索标题或摘要"></label>
+            <button class="primary-button" id="feed-filter-button">筛选</button>
+          </div>
+          <div class="feed-list" id="feed-list"><div class="skeleton-list"></div></div>
+          <div class="feed-pagination" aria-label="Feed 分页"><button class="secondary-button" id="feed-prev" type="button">上一页</button><span id="feed-page">0 / 0</span><button class="secondary-button" id="feed-next" type="button">下一页</button></div>
+        </section>
+
+        <section class="view" id="view-curations">
+          <div class="page-heading"><div><p class="eyebrow">EDITOR'S PICKS</p><h1 id="curation-heading">每日精选</h1><p id="curation-copy">从前一天内容中挑选最值得关注的信息。</p></div></div>
+          <div class="curation-list" id="curation-list"><div class="skeleton-list"></div></div>
+        </section>
+
+        <section class="view" id="view-settings">
+          <div class="page-heading settings-heading"><div><p class="eyebrow">PREFERENCES</p><h1>关注方向</h1><p>把你真正想追踪的主题整理成清晰的关注清单，精选任务会优先参考它们。</p></div><div class="heading-note"><span>当前方向</span><strong id="direction-heading-count">0</strong></div></div>
+          <div class="settings-grid">
+            <section class="panel settings-panel direction-panel"><div class="panel-heading"><div><span class="panel-kicker">CONTENT SIGNALS</span><h2>我的关注清单</h2><p>添加你想持续收到更新的主题，按 Enter 即可生成标签。</p></div><span class="settings-state" id="direction-state">已同步</span></div><div class="direction-editor"><div class="direction-input-row"><input id="direction-new" type="text" maxlength="60" placeholder="例如：AI Agent 工程化"><button class="secondary-button" id="add-direction" type="button">添加方向</button></div><div class="direction-list" id="direction-list" aria-live="polite"></div><div class="direction-empty hidden" id="direction-empty"><span class="empty-spark">✦</span><strong>还没有关注方向</strong><p>从下方建议开始，或输入一个你关心的主题。</p></div></div><div class="settings-actions"><span id="direction-count">0 个方向</span><div class="settings-action-group"><button class="text-button" id="reset-directions" type="button">撤销修改</button><button class="primary-button" id="save-directions" type="button">保存关注方向</button></div></div></section>
+            <section class="panel settings-panel direction-guide"><div class="panel-heading"><div><span class="panel-kicker">QUICK START</span><h2>常用方向</h2><p>点击建议，快速加入你的清单。</p></div></div><div class="suggestion-list"><button type="button" class="suggestion-chip" data-direction="AI Agent 工程化">AI Agent 工程化<span>＋</span></button><button type="button" class="suggestion-chip" data-direction="开发者工具与开源项目">开发者工具与开源项目<span>＋</span></button><button type="button" class="suggestion-chip" data-direction="宏观经济与市场趋势">宏观经济与市场趋势<span>＋</span></button><button type="button" class="suggestion-chip" data-direction="信息安全与风险">信息安全与风险<span>＋</span></button><button type="button" class="suggestion-chip" data-direction="产品发布与行业动态">产品发布与行业动态<span>＋</span></button></div><div class="guide-tip"><span>⌘</span><p>建议保持 3–8 个方向，精选结果会更聚焦。</p></div></section>
+            <section class="panel settings-panel token-panel"><div class="panel-heading"><div><span class="panel-kicker">ACCESS</span><h2>管理凭证</h2><p>写操作和 cc-connect 精选任务使用 Bearer Token。</p></div></div><label class="token-field"><span>API Token</span><input type="password" id="api-token" placeholder="输入管理 Token"></label><p class="settings-hint">Token 只保存在当前浏览器的 localStorage，不会写入订阅数据库。</p><button class="secondary-button" id="save-token">保存到浏览器</button></section>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="detail-drawer" id="detail-drawer" aria-hidden="true" aria-label="监控详情">
+    <button class="drawer-close icon-button" id="drawer-close" aria-label="关闭详情">
+      <svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
+    <div id="drawer-content"></div>
+  </aside>
+  <div class="modal-backdrop" id="monitor-modal-backdrop"></div>
+  <section class="modal" id="monitor-modal" aria-hidden="true">
+    <div class="modal-heading"><div><p class="eyebrow">NEW MONITOR</p><h2>新增监控</h2></div><button class="icon-button" id="monitor-modal-close" type="button" aria-label="关闭">×</button></div>
+    <form id="monitor-form">
+      <div class="form-grid"><label><span>名称</span><input name="name" required placeholder="例如：OpenAI Blog"></label><label><span>唯一 ID</span><input name="id" required pattern="[a-zA-Z0-9_-]+" placeholder="openai-blog"></label></div>
+      <label><span>来源类型</span><select name="type" id="monitor-type"><option value="rss">RSS</option><option value="atom">Atom</option><option value="github_releases">GitHub Releases</option><option value="web_page">网页列表</option></select></label>
+      <label class="type-field" data-types="rss atom"><span>Feed URL</span><input name="url" type="url" placeholder="https://example.com/feed.xml"></label>
+      <label class="type-field hidden" data-types="github_releases"><span>GitHub 仓库</span><input name="repository" placeholder="owner/repository"></label>
+      <div class="type-field hidden web-fields" data-types="web_page"><label><span>网页 URL</span><input name="web_url" type="url" placeholder="https://example.com/news"></label><label><span>条目选择器</span><input name="item_selector" placeholder="article.news-item"></label><div class="form-grid"><label><span>标题选择器</span><input name="title_selector" placeholder="h2"></label><label><span>链接选择器</span><input name="url_selector" placeholder="a"></label></div></div>
+      <label><span>标签（逗号分隔）</span><input name="tags" placeholder="AI, 产品更新"></label>
+      <div class="modal-actions"><button type="button" class="secondary-button" id="monitor-modal-cancel">取消</button><button type="submit" class="primary-button">创建订阅</button></div>
+    </form>
+  </section>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/assets/app.js?v=20260722-9" defer></script>
+</body>
+</html>
