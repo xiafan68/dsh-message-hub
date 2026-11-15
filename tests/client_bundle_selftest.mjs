@@ -182,4 +182,12 @@ assert.ok(code.includes('feedDeleted'), '缺少删除完成提示');
 assert.ok(code.includes('feedPaused'), '缺少暂停提示');
 checks += 3;
 
+// ---- 条目删除（单条 + 批量选择） --------------------------------------------
+assert.ok(code.includes('mh-item-check'), '缺少条目勾选框样式');
+assert.ok(code.includes('deleteSelected'), '缺少批量删除文案');
+assert.ok(code.includes('confirmDeleteItems'), '缺少批量删除确认文案');
+assert.ok(code.includes('itemsDeleted'), '缺少批量删除完成提示');
+assert.ok(code.includes('deleteItem'), '缺少单条删除处理');
+checks += 5;
+
 console.log(`client_bundle_selftest: ${checks} 项断言全部通过`);

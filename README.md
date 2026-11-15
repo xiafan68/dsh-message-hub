@@ -173,6 +173,8 @@ bundle 自带一份默认配置（`cordis.patch.yml`），开箱即用。要改�
 
 - **搜索**：关键词命中标题/摘要，防抖 260ms；**只看收藏**；分页；刷新。
 - **收藏**：详情里直接收藏/取消收藏（收藏的条目不会被上游的两周清理带走）。
+- **删除条目**：右侧详情里删单条；左侧每行有勾选框，可全选当前页后点「删除选中（n）」。两处都要点两次确认；
+  删除是物理删除（连带清掉投递记录），删了就没了。
 - **立刻采集**：选中一个源后，右侧详情里触发单源采集，会真的发网络请求，可能耗时十几秒。
 - **暂停 / 恢复 / 删除**：同样在右侧详情：暂停的源不再参与「全部采集」，也不会被自动采集；删除是软删，
   按钮要点两次（第二次变「确认删除」）才真的执行。
@@ -209,7 +211,7 @@ bundle 自带一份默认配置（`cordis.patch.yml`），开箱即用。要改�
 | `hub_feed_add` | 新增源：参数 `kind` 取 `rss`（url）/ `github_releases`（owner/name）/ `web_page`（完整 config） | ✓ |
 | `hub_feed_control` | `enable` / `disable` / `delete` / `run` | ✓ |
 | `hub_items` | 条目流（关键词/来源/日期/收藏/分页） | |
-| `hub_item` | 单条详情；`action=like/unlike` 收藏 | ✓ |
+| `hub_item` | 单条详情；`action=like/unlike` 收藏、`delete` 删除 | ✓ |
 | `hub_selection` | **用户此刻在面板里选中的条目或源** | |
 | `hub_digest` | 每日/每周精选：不传 id 列各期，传 `collection_id` 展开条目与理由 | |
 | `hub_preferences` | 关注方向：`list` / `add` / `remove` / `set` | ✓ |
@@ -287,6 +289,8 @@ skills 注册表（没有 skills 服务时静默跳过，不影响工具）。
 | `DELETE /feeds/<id>` | 软删 |
 | `GET /items` | 条目流，参数 `q` `source_id` `liked` `from_date` `to_date` `limit` `offset` |
 | `POST /items/<id>/like` · `/unlike` | 收藏 / 取消 |
+| `DELETE /items/<id>` | 删除单条（物理删除） |
+| `POST /items/delete` | 批量删除，`{ids:[...]}`，单次上限 500 |
 | `GET /selection?session=` | 当前选中 |
 | `POST /selection` | 面板上报选中，`{sessionId, selection}` |
 | `DELETE /selection?session=` | 清空选中 |

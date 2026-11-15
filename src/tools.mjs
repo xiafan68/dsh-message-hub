@@ -406,10 +406,11 @@ export function registerTools({ ctx, tools, service, selection, ensureStarted, d
   // ---- 7. 单条 + 收藏 ---------------------------------------------------
   register({
     name: 'hub_item',
-    description: '查看单条订阅条目的正文摘要与链接；action=like/unlike 可收藏或取消收藏（收藏的条目不会被两周清理）。',
+    description: '查看单条订阅条目的正文摘要与链接；action=like/unlike 可收藏或取消收藏（收藏的条目不会被两周清理）；'
+      + 'action=delete 物理删除该条目（不可恢复，用户明确要求清理时用）。',
     parameters: {
       id: { type: 'integer', description: '条目 id（hub_items 返回里的 #N）' },
-      action: { type: 'string', description: 'show（默认）| like | unlike' },
+      action: { type: 'string', description: 'show（默认）| like | unlike | delete' },
     },
     output: { schema: { type: 'string' }, render: (_a, v) => text(v) },
     isConcurrencySafe: (args) => !args || !args.action || args.action === 'show',
@@ -419,6 +420,10 @@ export function registerTools({ ctx, tools, service, selection, ensureStarted, d
       if (!Number.isInteger(id) || id <= 0) return '缺少有效的条目 id（整数）。';
       const action = String(args.action || 'show').trim();
       try {
+        if (action === 'delete') {
+          await service.deleteItem(id);
+          return `已删除 #${id}。`;
+        }
         if (action === 'like' || action === 'unlike') {
           const data = action === 'like' ? await service.like(id) : await service.unlike(id);
           const item = (data && data.item) || data || {};

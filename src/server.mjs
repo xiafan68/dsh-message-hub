@@ -13,6 +13,8 @@
  *   DELETE /feeds/<id>                 删除（软删，写）
  *   GET    /items                      条目流（?q=&source_id=&liked=&from_date=&to_date=&limit=&offset=）
  *   POST   /items/<id>/like|unlike     收藏（写）
+ *   DELETE /items/<id>                 删除单条（写，物理删除）
+ *   POST   /items/delete               {"ids":[...]} 批量删除（写，上限 500）
  *   GET    /selection                  当前选中（?session=<id>）
  *   POST   /selection                  面板上报选中 {"sessionId": "...", "selection": {...}}
  *   DELETE /selection                  清空选中
@@ -259,6 +261,27 @@ export function createApi({ service, selection, ensureStarted, dataDir = '', log
         const id = decodeURIComponent(itemAction[1]);
         const result = itemAction[2] === 'like' ? await service.like(id) : await service.unlike(id);
         sendJson(res, 200, { ok: true, item: result });
+        return;
+      }
+
+      if (method === 'DELETE' && /^\/items\/[^/]+$/.test(tail)) {
+        const id = decodeURIComponent(tail.slice('/items/'.length));
+        const result = await service.deleteItem(id);
+        sendJson(res, 200, { ok: true, deleted: (result && result.deleted) || 1 });
+        return;
+      }
+
+      if (method === 'POST' && tail === '/items/delete') {
+        const raw = await readBody(req, maxBodyBytes);
+        let parsed;
+        try { parsed = JSON.parse(raw); } catch { sendJson(res, 400, { ok: false, code: 'bad-json' }); return; }
+        const ids = parsed && parsed.ids;
+        if (!Array.isArray(ids) || ids.length === 0) {
+          sendJson(res, 400, { ok: false, code: 'bad-ids', message: 'ids 必须是非空数组' });
+          return;
+        }
+        const result = await service.deleteItems(ids);
+        sendJson(res, 200, { ok: true, deleted: (result && result.deleted) || 0 });
         return;
       }
 

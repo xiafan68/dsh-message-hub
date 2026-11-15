@@ -44,6 +44,12 @@ const server = http.createServer((req, res) => {
       case '/api/v1/feed':
         send(200, { items: [{ id: 7, title: 'Hello', summary: 'world', liked: false }], total: 1, limit: 50, offset: 0 });
         break;
+      case '/api/v1/feed/7':
+        send(200, { deleted: 1 });
+        break;
+      case '/api/v1/feed/delete':
+        send(200, { deleted: 2 });
+        break;
       case '/api/v1/overview':
         send(200, { total_monitors: 1, active_monitors: 1, attention_monitors: 0, total_items: 2559 });
         break;
@@ -86,6 +92,19 @@ checks += 2;
 const overview = await service.overview();
 assert.equal(overview.total_items, 2559);
 checks += 1;
+
+// ---- 条目删除 -------------------------------------------------------------
+const deleted = await service.deleteItem(7);
+assert.equal(deleted.deleted, 1);
+assert.equal(seen.at(-1).method, 'DELETE');
+assert.equal(seen.at(-1).url, '/api/v1/feed/7');
+checks += 2;
+
+const deletedBatch = await service.deleteItems([7, 8]);
+assert.equal(deletedBatch.deleted, 2);
+assert.equal(seen.at(-1).url, '/api/v1/feed/delete');
+assert.deepEqual(JSON.parse(seen.at(-1).body), { ids: [7, 8] });
+checks += 2;
 
 // ---- 错误映射 -------------------------------------------------------------
 await assert.rejects(service.runMonitor('bad'), (err) => {

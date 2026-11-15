@@ -268,6 +268,23 @@ class Store:
             ).fetchone()
         return dict(row) if row else None
 
+    def delete_item(self, item_id: int) -> bool:
+        """物理删除一条条目。deliveries 有 ON DELETE CASCADE，这里显式清掉以防 PRAGMA 没开。"""
+        with self.connect() as connection:
+            connection.execute("DELETE FROM deliveries WHERE item_id = ?", (item_id,))
+            cursor = connection.execute("DELETE FROM items WHERE id = ?", (item_id,))
+        return cursor.rowcount > 0
+
+    def delete_items(self, item_ids: list[int]) -> int:
+        ids = sorted({int(value) for value in item_ids})
+        if not ids:
+            return 0
+        placeholders = ",".join("?" for _ in ids)
+        with self.connect() as connection:
+            connection.execute(f"DELETE FROM deliveries WHERE item_id IN ({placeholders})", ids)
+            cursor = connection.execute(f"DELETE FROM items WHERE id IN ({placeholders})", ids)
+        return cursor.rowcount
+
     def delete_unliked_before(self, cutoff: str) -> int:
         with self.connect() as connection:
             cursor = connection.execute(

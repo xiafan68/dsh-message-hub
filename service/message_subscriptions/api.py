@@ -176,6 +176,27 @@ def create_app(config: AppConfig, store: Store) -> FastAPI:
             raise HTTPException(status_code=404, detail="Feed item not found")
         return result
 
+    @app.delete("/api/v1/feed/{item_id}")
+    def delete_feed_item(item_id: int, authorization: str | None = Header(default=None)) -> dict[str, Any]:
+        require_write_token(authorization)
+        if not store.delete_item(item_id):
+            raise HTTPException(status_code=404, detail="Feed item not found")
+        return {"deleted": 1}
+
+    @app.post("/api/v1/feed/delete")
+    def delete_feed_items(payload: dict = Body(...), authorization: str | None = Header(default=None)) -> dict[str, Any]:
+        require_write_token(authorization)
+        raw = payload.get("ids")
+        if not isinstance(raw, list) or not raw:
+            raise HTTPException(status_code=400, detail="ids must be a non-empty array")
+        try:
+            ids = sorted({int(value) for value in raw})
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail="ids must be integers") from exc
+        if len(ids) > 500:
+            raise HTTPException(status_code=400, detail="too many ids (max 500)")
+        return {"deleted": store.delete_items(ids)}
+
     @app.get("/api/v1/preferences")
     def preferences() -> dict[str, Any]:
         return {"directions": store.get_preferences()}

@@ -97,6 +97,13 @@ window.__ModuleLoader__.load({
 			feedPaused: "已暂停该源",
 			feedResumed: "已恢复该源",
 			feedDeleted: "已删除该源",
+			selectAll: "全选",
+			deleteSelected: "删除选中（{n}）",
+			confirmDeleteItems: "确认删除 {n} 条？",
+			itemsDeleted: "已删除 {n} 条",
+			deleteItem: "删除条目",
+			confirmDeleteItem: "确认删除条目",
+			itemDeleted: "条目已删除",
 			typeRss: "RSS",
 			typeWeb: "网页",
 			typeGithub: "GitHub",
@@ -184,6 +191,13 @@ window.__ModuleLoader__.load({
 			feedPaused: "Source paused",
 			feedResumed: "Source resumed",
 			feedDeleted: "Source deleted",
+			selectAll: "Select all",
+			deleteSelected: "Delete selected ({n})",
+			confirmDeleteItems: "Delete {n} items?",
+			itemsDeleted: "Deleted {n} items",
+			deleteItem: "Delete item",
+			confirmDeleteItem: "Confirm delete item",
+			itemDeleted: "Item deleted",
 			typeRss: "RSS",
 			typeWeb: "Web",
 			typeGithub: "GitHub",
@@ -349,6 +363,10 @@ window.__ModuleLoader__.load({
 			".mh-input:focus{border-color:#82ad9b;box-shadow:0 0 0 3px rgba(41,114,91,.08);}",
 			".mh-toggle{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--dsw-colors-text-muted,#6b7480);white-space:nowrap;}",
 			".mh-item{display:block;width:100%;text-align:left;padding:10px 13px;border:0;border-bottom:1px solid var(--dsw-colors-border-muted,#f2f4f5);background:transparent;color:inherit;font:inherit;cursor:pointer;}",
+			".mh-item-row{display:flex;align-items:flex-start;gap:6px;padding-left:8px;}",
+			".mh-item-row.on{background:var(--dsw-alias-interactive-bg-hover,#f3f6f8);}",
+			".mh-item-row .mh-item{flex:1;min-width:0;}",
+			".mh-item-check{margin:12px 0 0;flex:none;accent-color:#2f6f5e;}",
 			".mh-item:hover{background:var(--dsw-colors-bg-subtle,#f7f9fa);}",
 			".mh-item.on{background:#eef6f2;}",
 			".mh-item-title{font-size:13px;font-weight:600;line-height:1.45;margin:0 0 3px;}",
@@ -447,6 +465,9 @@ window.__ModuleLoader__.load({
 				toast: "",
 				// 全部采集：done/total 用来在按钮上显示进度，busy 期间禁止重复点
 				runAll: { busy: false, done: 0, total: 0 },
+				// 条目多选：itemSelection 存当前页勾选的 id；selectionArmed 是批量删除的二次确认
+				itemSelection: [],
+				selectionArmed: false,
 				// 「每日精选」与「关注偏好」：同一份数据的两个视图，跟条目流并列成三个页签
 				tab: "feed",              // feed | digest | prefs
 				digests: [],
@@ -675,6 +696,70 @@ window.__ModuleLoader__.load({
 				});
 			}, [patch, refresh]);
 
+			var toggleItemSelected = react.useCallback(function (id) {
+				var key = String(id);
+				patch(function (prev) {
+					var ids = prev.itemSelection.slice();
+					var at = ids.indexOf(key);
+					if (at >= 0) ids.splice(at, 1); else ids.push(key);
+					return { itemSelection: ids, selectionArmed: false };
+				});
+			}, [patch]);
+
+			var toggleSelectAllItems = react.useCallback(function () {
+				patch(function (prev) {
+					var all = (prev.items || []).map(function (row) { return String(row.id); });
+					var every = all.length > 0 && all.every(function (id) { return prev.itemSelection.indexOf(id) >= 0; });
+					return { itemSelection: every ? [] : all, selectionArmed: false };
+				});
+			}, [patch]);
+
+			var armSelection = react.useCallback(function () {
+				patch({ selectionArmed: true });
+			}, [patch]);
+
+			// 删除后同步内存里的列表：不然要等下一次刷新，幽灵行还会被再次勾选。
+			function forgetItems(prev, ids) {
+				var drop = {};
+				ids.forEach(function (id) { drop[String(id)] = true; });
+				var items = (prev.items || []).filter(function (row) { return !drop[String(row.id)]; });
+				var selected = prev.selected && prev.selected.kind === "item" && drop[String(prev.selected.id)] ? null : prev.selected;
+				return {
+					items: items,
+					total: Math.max(0, Number(prev.total || 0) - ids.length),
+					selected: selected,
+					itemSelection: (prev.itemSelection || []).filter(function (id) { return !drop[String(id)]; }),
+					selectionArmed: false,
+				};
+			}
+
+			var deleteItems = react.useCallback(function (ids) {
+				var list = (ids || []).map(String).filter(Boolean);
+				if (list.length === 0) return Promise.resolve();
+				patch({ busy: true, toast: "" });
+				return sendJson("/items/delete", "POST", { ids: list.map(Number) }).then(function (data) {
+					var n = Number(data && data.deleted) || list.length;
+					patch(function (prev) {
+						return Object.assign({ busy: false, toast: fill(zh.itemsDeleted, { n: n }) }, forgetItems(prev, list));
+					});
+				}).catch(function (err) {
+					patch({ busy: false, toast: err.message });
+				});
+			}, [patch]);
+
+			var deleteItem = react.useCallback(function (item) {
+				if (!item) return Promise.resolve();
+				var id = String(item.id);
+				patch({ busy: true, toast: "" });
+				return sendJson("/items/" + encodeURIComponent(id), "DELETE").then(function () {
+					patch(function (prev) {
+						return Object.assign({ busy: false, toast: zh.itemDeleted }, forgetItems(prev, [id]));
+					});
+				}).catch(function (err) {
+					patch({ busy: false, toast: err.message });
+				});
+			}, [patch]);
+
 			var startService = react.useCallback(function () {
 				patch({ status: "loading", error: "", toast: zh.starting });
 				var stopped = false;
@@ -725,6 +810,11 @@ window.__ModuleLoader__.load({
 				runAllSources: runAllSources,
 				setSourceEnabled: setSourceEnabled,
 				deleteSource: deleteSource,
+				toggleItemSelected: toggleItemSelected,
+				toggleSelectAllItems: toggleSelectAllItems,
+				armSelection: armSelection,
+				deleteItems: deleteItems,
+				deleteItem: deleteItem,
 				startService: startService,
 				setQuery: setQuery,
 				loadDigests: loadDigests,
@@ -839,6 +929,10 @@ window.__ModuleLoader__.load({
 			var total = props.total || 0;
 			var pages = Math.max(1, Math.ceil(total / (query.limit || PAGE_SIZE)));
 			var page = Math.floor((query.offset || 0) / (query.limit || PAGE_SIZE)) + 1;
+			var selection = props.selection || [];
+			var selectedCount = selection.length;
+			// 当前页是否全选：只看这一页，避免误以为跨页也选中了
+			var allSelected = items.length > 0 && items.every(function (item) { return selection.indexOf(String(item.id)) >= 0; });
 			return jsx.jsxs("div", { className: "mh-col", children: [
 				jsx.jsx("div", { className: "mh-toolbar", children: [
 					jsx.jsx("input", {
@@ -855,24 +949,52 @@ window.__ModuleLoader__.load({
 						}),
 						t("likedOnly"),
 					] }),
+					jsx.jsx("span", { className: "mh-spacer" }),
+					jsx.jsxs("label", { className: "mh-toggle", children: [
+						jsx.jsx("input", {
+							type: "checkbox",
+							checked: allSelected,
+							disabled: items.length === 0,
+							onChange: function () { props.onToggleAll(); },
+						}),
+						t("selectAll"),
+					] }),
+					selectedCount > 0 ? jsx.jsx("button", {
+						type: "button",
+						className: "mh-btn danger" + (props.selectionArmed ? " armed" : ""),
+						disabled: props.busy,
+						onClick: function () { props.onDeleteSelected(); },
+						children: fill(props.selectionArmed ? t("confirmDeleteItems") : t("deleteSelected"), { n: selectedCount }),
+					}) : null,
 				] }),
 				items.length === 0
 					? jsx.jsx("div", { className: "mh-empty", children: t("noItems") })
 					: items.map(function (item) {
 						var active = String(item.id) === String(selectedId);
-						return jsx.jsxs("button", {
-							type: "button",
-							className: "mh-item" + (active ? " on" : ""),
-							onClick: function () { props.onPick(item); },
-							children: [
-								jsx.jsx("p", { className: "mh-item-title", children: (item.liked ? "★ " : "") + (item.title || "(无标题)") }),
-								item.summary ? jsx.jsx("p", { className: "mh-item-sum", children: oneLine(item.summary, 120) }) : null,
-								jsx.jsxs("div", { className: "mh-item-meta", children: [
-									jsx.jsx("span", { className: "mh-tag", children: item.source_name || item.source_id }),
-									jsx.jsx("span", { children: relTime(item.created_at || item.published_at || item.first_seen_at) }),
-								] }),
-							],
-						}, item.id);
+						var checked = selection.indexOf(String(item.id)) >= 0;
+						return jsx.jsxs("div", { className: "mh-item-row" + (active ? " on" : ""), children: [
+							jsx.jsx("input", {
+								type: "checkbox",
+								className: "mh-item-check",
+								checked: checked,
+								disabled: props.busy,
+								"aria-label": t("selectAll"),
+								onChange: function () { props.onToggleItem(item.id); },
+							}),
+							jsx.jsxs("button", {
+								type: "button",
+								className: "mh-item",
+								onClick: function () { props.onPick(item); },
+								children: [
+									jsx.jsx("p", { className: "mh-item-title", children: (item.liked ? "★ " : "") + (item.title || "(无标题)") }),
+									item.summary ? jsx.jsx("p", { className: "mh-item-sum", children: oneLine(item.summary, 120) }) : null,
+									jsx.jsxs("div", { className: "mh-item-meta", children: [
+										jsx.jsx("span", { className: "mh-tag", children: item.source_name || item.source_id }),
+										jsx.jsx("span", { children: relTime(item.created_at || item.published_at || item.first_seen_at) }),
+									] }),
+								],
+							}),
+						] }, item.id);
 					}),
 				jsx.jsxs("div", { className: "mh-pager", children: [
 					jsx.jsx("span", { children: fill(t("pageInfo"), { page: page, pages: pages, total: total }) }),
@@ -944,6 +1066,17 @@ window.__ModuleLoader__.load({
 					onClick: function () { props.onToggleLike(item); },
 					children: item.liked ? t("unlike") : t("like"),
 				}, "like"));
+				actions.push(jsx.jsx("button", {
+					type: "button",
+					className: "mh-btn danger" + (confirming ? " armed" : ""),
+					disabled: props.busy,
+					onClick: function () {
+						if (!confirming) { setConfirming(true); return; }
+						setConfirming(false);
+						props.onDeleteItem(item);
+					},
+					children: confirming ? t("confirmDeleteItem") : t("deleteItem"),
+				}, "delete-item"));
 			}
 			if (selected.url) {
 				actions.push(jsx.jsx("a", {
@@ -1205,6 +1338,12 @@ window.__ModuleLoader__.load({
 				? (state.items || []).filter(function (item) { return String(item.id) === String(state.selected.id); })[0] || null
 				: null;
 
+			// 批量删除要按两次：第一次只是把按钮换成「确认删除 n 条？」
+			function deleteSelectedItems() {
+				if (!state.selectionArmed) { hub.armSelection(); return; }
+				hub.deleteItems(state.itemSelection);
+			}
+
 			if (state.status === "down") {
 				return jsx.jsx("div", { className: "mh-root", children: jsx.jsx(ServiceDown, { t: t, busy: state.status === "loading", onStart: hub.startService }) });
 			}
@@ -1259,6 +1398,12 @@ window.__ModuleLoader__.load({
 						total: state.total,
 						query: state.query,
 						selectedId: state.selected ? state.selected.id : "",
+						selection: state.itemSelection,
+						selectionArmed: state.selectionArmed,
+						busy: state.busy,
+						onToggleItem: hub.toggleItemSelected,
+						onToggleAll: hub.toggleSelectAllItems,
+						onDeleteSelected: deleteSelectedItems,
 						onPick: function (item) { hub.selectItem(item); },
 						onQuery: hub.setQuery,
 					}),
@@ -1269,6 +1414,7 @@ window.__ModuleLoader__.load({
 						source: activeSource,
 						busy: state.busy,
 						onToggleLike: hub.toggleLike,
+						onDeleteItem: hub.deleteItem,
 						onRunSource: hub.runSource,
 						onToggleSource: hub.setSourceEnabled,
 						onDeleteSource: hub.deleteSource,

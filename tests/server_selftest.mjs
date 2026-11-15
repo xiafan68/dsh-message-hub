@@ -32,6 +32,8 @@ const service = {
   async feed(params) { calls.push(['feed', params]); return { items: [{ id: 7, title: 'Hello', summary: 'world', liked: false, source_id: 'github-blog' }], total: 1, limit: 50, offset: 0 }; },
   async like(id) { calls.push(['like', id]); return { id: Number(id), liked: true }; },
   async unlike(id) { calls.push(['unlike', id]); return { id: Number(id), liked: false }; },
+  async deleteItem(id) { calls.push(['deleteItem', id]); return { deleted: 1 }; },
+  async deleteItems(ids) { calls.push(['deleteItems', ids]); return { deleted: ids.length }; },
   async preferences() { return { directions: ['AI 基础设施'] }; },
   async setPreferences(directions) { calls.push(['setPreferences', directions]); return { directions: directions.map((d) => d.trim()).filter(Boolean) }; },
   async curations(params) { calls.push(['curations', params]); return { items: [{ id: 'c-daily', kind: 'daily', period_start: '2026-11-12', period_end: '2026-11-13', title: '2026-11-12 每日精选', summary: 'AI 基础设施两条' }] }; },
@@ -124,6 +126,31 @@ checks += 1;
 r = await json('/items/7/unlike', { method: 'POST' });
 assert.equal(r.body.item.liked, false);
 checks += 1;
+
+// ---- 条目删除：单条 + 批量 -------------------------------------------------
+r = await json('/items/7', { method: 'DELETE' });
+assert.equal(r.status, 200);
+assert.equal(r.body.deleted, 1);
+checks += 2;
+
+r = await json('/items/delete', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ ids: [7, 8] }),
+});
+assert.equal(r.status, 200);
+assert.equal(r.body.deleted, 2);
+assert.deepEqual(calls.at(-1), ['deleteItems', [7, 8]]);
+checks += 3;
+
+r = await json('/items/delete', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ ids: [] }),
+});
+assert.equal(r.status, 400);
+assert.equal(r.body.code, 'bad-ids');
+checks += 2;
 
 r = await json('/service/start', { method: 'POST' });
 assert.equal(r.body.ok, true);

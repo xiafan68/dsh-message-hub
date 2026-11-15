@@ -26,6 +26,7 @@ license: MIT
 | 条目流（关键词 / 来源 / 日期 / 收藏 / 分页） | `hub_items` | |
 | 单条正文摘要 + 链接 | `hub_item` | |
 | 收藏 / 取消收藏 | `hub_item(action=like/unlike)` | ✓ |
+| 删除条目（不可恢复） | `hub_item(action=delete)` | ✓ |
 | 每日 / 每周精选 | `hub_digest` | |
 | 用户此刻在面板里选中的东西 | `hub_selection` | |
 | 加源 | `hub_feed_add` | ✓ |

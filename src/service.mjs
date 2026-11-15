@@ -151,6 +151,8 @@ export function createService({ apiBase = DEFAULT_API_BASE, token = '', timeoutM
     feed: (params = {}) => request(`/api/v1/feed?${new URLSearchParams(cleanParams(params)).toString()}`),
     like: (id) => request(`/api/v1/feed/${encodeURIComponent(id)}/like`, { method: 'POST' }),
     unlike: (id) => request(`/api/v1/feed/${encodeURIComponent(id)}/like`, { method: 'DELETE' }),
+    deleteItem: (id) => request(`/api/v1/feed/${encodeURIComponent(id)}`, { method: 'DELETE', timeout: 15000 }),
+    deleteItems: (ids) => request('/api/v1/feed/delete', { method: 'POST', body: { ids }, timeout: 15000 }),
     preferences: () => request('/api/v1/preferences'),
     // PUT 是整份覆盖：服务端会去空白、去重，并回传归一化后的列表
     setPreferences: (directions) => request('/api/v1/preferences', { method: 'PUT', body: { directions } }),
