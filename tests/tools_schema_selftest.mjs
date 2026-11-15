@@ -42,9 +42,10 @@ ok('每个 parameters 都是对象根 + properties 映射', () => {
 
 ok('hub_feed_add 的 type 是字符串属性而不是 schema 本身', () => {
   const tool = registered.find(({ tool }) => tool.name === 'hub_feed_add').tool;
-  const type = tool.parameters.properties.type;
-  assert.equal(type.type, 'string');
-  assert.match(type.description, /rss \| github_releases \| web_page/);
+  const kind = tool.parameters.properties.kind;
+  assert.equal(kind.type, 'string');
+  assert.match(kind.description, /rss \| github_releases \| web_page/);
+  assert.equal(tool.parameters.properties.type, undefined, 'type 不应再作为属性名（与 JSON Schema 关键字冲突）');
   assert.equal(tool.parameters.properties.interval_minutes.type, 'integer');
   assert.equal(tool.parameters.properties.config.type, 'object');
   assert.equal(tool.parameters.required, undefined, '没有必填参数时不应出现 required');

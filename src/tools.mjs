@@ -249,14 +249,14 @@ export function registerTools({ ctx, tools, service, selection, ensureStarted, d
   // ---- 4. 新增源（对话里加订阅） ---------------------------------------
   register({
     name: 'hub_feed_add',
-    description: '新增一个订阅源。支持三种 type：'
+    description: '新增一个订阅源。kind 支持三种：'
       + 'rss（传 url）、github_releases（传 repository=owner/name）、web_page（传 config 完整对象）。'
       + '用户说「帮我订 XX 的博客/RSS」「盯着某个仓库的 release」时用它。'
       + '新增后不会立刻抓取：要马上抓一次再调 hub_feed_control(action="run")。',
     parameters: {
       id: { type: 'string', description: '源标识（英文/数字/连字符），不传则按名称生成' },
       name: { type: 'string', description: '显示名称' },
-      type: { type: 'string', description: 'rss | github_releases | web_page' },
+      kind: { type: 'string', description: '订阅源种类：rss | github_releases | web_page（必填）' },
       url: { type: 'string', description: 'rss 的 feed 地址，或 web_page 的页面地址' },
       repository: { type: 'string', description: 'github_releases 的仓库，形如 owner/name' },
       tags: { type: 'string', description: '标签，逗号分隔（例如 ai-hot,blog）' },
@@ -266,7 +266,9 @@ export function registerTools({ ctx, tools, service, selection, ensureStarted, d
     output: { schema: { type: 'string' }, render: (_a, v) => text(v) },
     timeoutMs: TIMEOUT_MS,
     async execute(args = {}) {
-      const type = String(args.type || 'rss').trim();
+      // 参数名不用 type：它和 JSON Schema 的关键字同名，严格校验的网关会直接拒掉整个工具。
+      // 老调用（args.type）继续接受，避免历史会话里的调用失效。
+      const type = String(args.kind || args.type || 'rss').trim();
       const name = String(args.name || '').trim();
       const slugify = (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
       const id = String(args.id || '').trim() || slugify(name || args.repository || args.url || '') || `feed-${Date.now()}`;

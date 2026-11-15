@@ -112,4 +112,4 @@ license: MIT
 → `hub_digest(kind="daily", limit=3)` → 取最新一期的 `id` → `hub_digest(collection_id=...)` → 按 3–5 条讲，每条带**入选理由**和链接，最后问要不要展开某条原文（`hub_item`）。
 
 **「帮我订 Simon Willison 的博客」**
-→ 没有 feed 地址就问（不要猜 `/blog` 首页）→ 拿到后 `hub_feed_add(type="rss", url=..., name="Simon Willison")` → 报告新建的 id 与类型 → 问是否立刻 `run` 一次。
+→ 没有 feed 地址就问（不要猜 `/blog` 首页）→ 拿到后 `hub_feed_add(kind="rss", url=..., name="Simon Willison")` → 报告新建的 id 与类型 → 问是否立刻 `run` 一次。

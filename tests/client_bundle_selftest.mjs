@@ -176,4 +176,10 @@ assert.ok(code.includes('"conversation.input.dock"'));
 assert.ok(code.includes('"main"'));
 checks += 3;
 
+// ---- 源管理按钮（暂停 / 删除确认） ------------------------------------------
+assert.ok(code.includes('confirmDeleteFeed'), '缺少删除确认文案');
+assert.ok(code.includes('feedDeleted'), '缺少删除完成提示');
+assert.ok(code.includes('feedPaused'), '缺少暂停提示');
+checks += 3;
+
 console.log(`client_bundle_selftest: ${checks} 项断言全部通过`);
