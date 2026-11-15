@@ -82,8 +82,60 @@ function resolveDefineTool(ctx, log) {
       // 继续下一个候选
     }
   }
-  log('未解析到 defineTool，工具按裸声明注册（由宿主校验）');
-  return (decl) => decl;
+  log('未解析到 defineTool，改用本地编译的 parameters schema');
+  return compileDeclaration;
+}
+
+/**
+ * 把作者侧的属性表编译成标准 JSON Schema 对象。
+ *
+ * 宿主的 defineTool 会做同一件事，但它在某些安装方式下解析不到（插件不在宿主
+ * 的解析路径里）：那条路径下若把属性表原样当 schema 发出去，顶层就会出现
+ * `type: { type: 'string' }` 这种非法的 `type` 值，LiteLLM / OpenAI 一类严格
+ * 网关会直接 400。这里做等价兜底，保证两条路径产出的 schema 一致。
+ */
+function compileValueSchema(spec) {
+  if (!spec || typeof spec !== 'object') return {};
+  const node = {};
+  for (const key of ['description', 'title', 'default', 'examples']) {
+    if (spec[key] !== undefined) node[key] = spec[key];
+  }
+  if (spec.oneOf) {
+    node.oneOf = spec.oneOf.map(compileValueSchema);
+    return node;
+  }
+  if (spec.type === 'json') return node;
+  node.type = spec.type;
+  if (spec.enum !== undefined) node.enum = spec.enum;
+  if (spec.const !== undefined) node.const = spec.const;
+  if (spec.type === 'array') node.items = compileValueSchema(spec.items || {});
+  if (spec.type === 'object') {
+    const map = spec.properties || {};
+    const properties = {};
+    for (const [key, child] of Object.entries(map)) properties[key] = compileValueSchema(child);
+    node.properties = properties;
+    node.additionalProperties = spec.additionalProperties !== false;
+  }
+  return node;
+}
+
+function compileParameters(parameters) {
+  const source = parameters && typeof parameters === 'object' ? parameters : {};
+  const properties = {};
+  const required = [];
+  for (const [key, spec] of Object.entries(source)) {
+    properties[key] = compileValueSchema(spec);
+    if (spec && spec.required === true) required.push(key);
+  }
+  const schema = { type: 'object', properties };
+  if (required.length > 0) schema.required = required;
+  return schema;
+}
+
+/** defineTool 不可用时的替身：只做 schema 编译，其余字段原样保留。 */
+function compileDeclaration(decl) {
+  if (!decl || decl.parameters === undefined) return decl;
+  return { ...decl, parameters: compileParameters(decl.parameters) };
 }
 
 export function registerTools({ ctx, tools, service, selection, ensureStarted, dataDir = '', defaultLimit = 50, log = (m) => void m }) {

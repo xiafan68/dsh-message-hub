@@ -1,6 +1,6 @@
 {
   "name": "@dsh-external/dsh-message-hub",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": false,
   "description": "Message Hub：把 RSS / 网页 / GitHub Releases 订阅接进对话。插件内置 Python 采集引擎（service/），首次启动自动建 venv、装依赖并拉起服务；宿主半边代理 BFF 并向模型暴露 hub_* 工具，浏览器半边渲染三栏面板，选中条目可一键写进对话草稿。",
   "type": "module",
@@ -72,7 +72,7 @@
   },
   "scripts": {
     "build": "node scripts/build-client.mjs",
-    "test": "node tests/fiber_contract_selftest.mjs && node tests/engine_selftest.mjs && node tests/skill_bundle_selftest.mjs && node tests/service_selftest.mjs && node tests/server_selftest.mjs && node tests/client_bundle_selftest.mjs && node tests/e2e_host_smoke.mjs && node tests/submission_selftest.mjs",
+    "test": "node tests/fiber_contract_selftest.mjs && node tests/engine_selftest.mjs && node tests/skill_bundle_selftest.mjs && node tests/service_selftest.mjs && node tests/server_selftest.mjs && node tests/client_bundle_selftest.mjs && node tests/tools_schema_selftest.mjs && node tests/e2e_host_smoke.mjs && node tests/submission_selftest.mjs",
     "check": "node scripts/build-client.mjs --check && npm test"
   }
 }
