@@ -1358,13 +1358,23 @@ window.__ModuleLoader__.load({
 												}),
 												jsx.jsx("button", {
 													type: "button",
-													className: "mh-btn primary",
+													className: "mh-btn",
 													onClick: function () {
 														var written = insertToComposer(referenceFor(selection));
 														if (written.ok) { setToast(t("inserted")); return; }
 														setToast(written.reason === "rejected" ? t("rejected") : t("noSession"));
 													},
 													children: t("toChat"),
+												}),
+												jsx.jsx("button", {
+													type: "button",
+													className: "mh-btn",
+													onClick: function () {
+														// 精选里的单条也能直接开新对话：引用只进草稿，不发送
+														var opened = startNewChat(referenceFor(selection));
+														setToast(opened ? t("newChatOpened") : t("newChatUnavailable"));
+													},
+													children: t("newChat"),
 												}),
 												item.url ? jsx.jsx("a", {
 													className: "mh-btn",
