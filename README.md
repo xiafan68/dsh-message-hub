@@ -423,8 +423,8 @@ npm run check     # build --check + test（提交前跑这个）
 
 ## 已知边界
 
-- **没有内置定时器**：引擎只在被触发时采集（面板「立刻采集」/ `hub_feed_control(action="run")`）。
-  需要周期采集就配系统计划任务定时调 `POST /api/v1/monitors/<id>/run`。
+- **没有内置调度器**：引擎自己不会定时；周期采集由插件进程里的定时器完成（`collectIntervalMinutes`，
+  默认 6 小时），插件没启动就没有采集。定时任务怎么配、每日精选怎么接，见 [docs/automation.md](docs/automation.md)。
 - **首次启动要联网**（PyPI）。离线环境请预先备好 venv 或把 `installDeps` 设为 `false`。
 - **精选不会自动生成**：`curation_collections` 由引擎之外的脚本写入，新环境里这一栏初始为空。
 - **选中态在内存里**：插件重启即丢。

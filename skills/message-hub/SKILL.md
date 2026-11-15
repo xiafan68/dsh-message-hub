@@ -92,6 +92,17 @@ license: MIT
 4. **摘要够用就别拉正文**：一次列表 + 一两条详情，通常就够回答。
 5. **说人话**：中文回答（用户用英文才用英文），条目按「来源 · 标题 · 时间」组织，链接放后面。
 
+## 自动化与每日精选
+
+用户要「每天自动出精选」「定时抓一下」时，不要只讲手工步骤——这条链路是现成的，按顺序确认：
+
+1. **采集**：插件每 `collectIntervalMinutes`（默认 360 分钟）自动跑一轮，启动 2 分钟后补一轮；面板「全部采集」与 BFF `POST <web>/message-hub/api/feeds/run-all` 是同一逻辑。
+2. **建任务**：用宿主的 `schedule_create`，`rrule` 带 IANA 时区（如 `DTSTART;TZID=Asia/Shanghai:20261116T080000` + `RRULE:FREQ=DAILY`），`target` 选 `this_session` 或 `new_once`。
+3. **提示词**：完整模板见仓库 `docs/automation.md`。要点：引擎固定 4001、库在 `~/.dsh/message-hub/data`；**Web 端口每次启动会变，只能读 `$env:DSH_WEB_URL`，不要写死**；候选 < 20 条时先补采再降级标注。
+4. **回写**：`POST /api/v1/curations`，同一 `period_start` 覆盖，重跑安全；HTML 只允许 `p ul ol li strong em a blockquote code`。
+
+排查顺序：`hub_status` → 引擎 4001 健康 → `feed_total` → BFF 端口是否来自环境变量 → 回写 `verified`。
+
 ## 失败处置
 
 | 返回 | 含义 | 动作 |
@@ -100,7 +111,7 @@ license: MIT
 | 401 / 403 | token 缺失或不一致 | 说明是鉴权问题，让用户检查 `config.token` / `tokenFile` |
 | 「没有匹配的条目」 | 真的没有 | 放宽日期或关键词再试一次；不要用别的来源凑 |
 | 「在最近 100 条里没找到」 | 条目太旧 | 用 `hub_items` + 日期区间重新定位 |
-| 「不支持的 type」 | 类型写错 | 只有 `rss` / `github_releases` / `web_page` |
+| 「不支持的 kind」 | 类型写错 | 只有 `rss` / `github_releases` / `web_page` |
 | 「web_page 需要 config」 | 参数不全 | 明说需要 request/extract/detect，不要硬编 |
 
 ## 三段示例
