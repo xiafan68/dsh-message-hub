@@ -170,6 +170,64 @@ assert.equal(written.ok, false);
 assert.equal(written.reason, 'rejected');
 checks += 2;
 
+// ---- 引用 chip 与新建对话 --------------------------------------------------
+const quoted = [];
+selftest.chatBridge.current = {
+  sessionId: 'sess-1',
+  actions: {
+    insertQuote: (text) => { quoted.push(text); return true; },
+    insertText: () => { throw new Error('不该回退到纯文本'); },
+  },
+  notify: null,
+};
+let quoteResult = selftest.insertQuoteToComposer('q1');
+assert.equal(quoteResult.ok, true);
+assert.deepEqual(quoted, ['q1']);
+checks += 2;
+
+// 宿主没有 insertQuote：退回纯文本草稿，不能直接失败
+const fallback = [];
+selftest.chatBridge.current = {
+  sessionId: 'sess-1',
+  actions: {
+    captureInsertion: () => undefined,
+    insertText: (text) => { fallback.push(text); return true; },
+  },
+  notify: null,
+};
+quoteResult = selftest.insertQuoteToComposer('q2');
+assert.equal(quoteResult.ok, true);
+assert.deepEqual(fallback, ['q2']);
+checks += 2;
+
+// 新建对话：prompt 走 startSession 的草稿初始化，不自动发送
+const starts = [];
+selftest.shell.ctx = {
+  get: (name) => name === 'uiWorkspace'
+    ? { startSession: (workspaceId, options) => { starts.push([workspaceId, options]); } }
+    : null,
+};
+assert.equal(selftest.startNewChat('引用文本'), true);
+assert.deepEqual(starts[0], [undefined, { prompt: '引用文本', whenDraftExists: 'replace' }]);
+checks += 2;
+
+// 空白新对话：不带 options，避免误清空已有草稿
+assert.equal(selftest.startNewChat(''), true);
+assert.equal(starts[1][1], undefined);
+checks += 2;
+
+// 缺少 uiWorkspace：返回 false，由界面提示不可用
+selftest.shell.ctx = { get: () => null };
+assert.equal(selftest.startNewChat('x'), false);
+selftest.shell.ctx = null;
+assert.equal(selftest.startNewChat('x'), false);
+checks += 2;
+
+assert.ok(code.includes('quoteToChat'), '缺少引用到对话文案');
+assert.ok(code.includes('newChatOpened'), '缺少新建对话完成提示');
+assert.ok(code.includes('startSession'), '缺少新建对话调用');
+checks += 3;
+
 // ---- 槽位常量 -------------------------------------------------------------
 assert.ok(code.includes('"sidebar.panellist"'));
 assert.ok(code.includes('"conversation.input.dock"'));

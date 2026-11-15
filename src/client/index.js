@@ -65,9 +65,15 @@ window.__ModuleLoader__.load({
 			like: "收藏",
 			unlike: "取消收藏",
 			toChat: "写进对话草稿",
+			quoteToChat: "引用到对话",
+			quoted: "已作为引用插入当前对话草稿（未自动发送）",
 			copy: "复制引用",
 			copied: "引用已复制",
 			inserted: "已写入当前会话草稿（未自动发送）",
+			newChat: "新建对话",
+			newChatOpened: "已新建对话，引用已放进草稿（未自动发送）",
+			newChatUnavailable: "当前界面不支持新建对话：缺少工作区导航服务",
+			draftTarget: "草稿写进当前打开的对话；要写进新对话，用「新建对话」。",
 			noSession: "还没有可写入的会话：先在对话里发过消息，或先打开聊天面板",
 			rejected: "草稿正在提交或已锁定，稍后再点一次",
 			chatHint: "只写进草稿，不会自动发送；模型也能用 hub_selection 读到你在面板里选中的内容。",
@@ -159,9 +165,15 @@ window.__ModuleLoader__.load({
 			like: "Like",
 			unlike: "Unlike",
 			toChat: "Write to chat draft",
+			quoteToChat: "Quote in chat",
+			quoted: "Inserted as a quote into the current draft (not sent)",
 			copy: "Copy reference",
 			copied: "Reference copied",
 			inserted: "Written to the current chat draft (not sent)",
+			newChat: "New chat",
+			newChatOpened: "New chat opened with the reference in its draft (not sent)",
+			newChatUnavailable: "New chat is unavailable: this shell has no workspace navigation service",
+			draftTarget: "Drafts go to the conversation you have open; use New chat to start a fresh one.",
 			noSession: "No writable session yet: send one message in chat first",
 			rejected: "The draft is submitting or locked; try again",
 			chatHint: "Draft only — nothing is sent. The model can also read your selection via hub_selection.",
@@ -413,6 +425,8 @@ window.__ModuleLoader__.load({
 		//#region 会话桥
 		/** 最近一次挂载的会话输入动作（dock 的 inject(sessionId) 提供）。 */
 		var chatBridge = { current: { sessionId: "", actions: null, notify: null } };
+		/** 插件 apply 时的客户端根 ctx：只用来按需取 uiWorkspace，避免顶层 inject 必需服务。 */
+		var shell = { ctx: null };
 
 		function insertToComposer(text) {
 			var bridge = chatBridge.current;
@@ -438,6 +452,36 @@ window.__ModuleLoader__.load({
 				}
 			} catch (e) { /* 退回手动复制 */ }
 			return false;
+		}
+
+		/** 引用 chip：宿主支持时走 insertQuote（带引用的视觉标记），否则退回纯文本草稿。 */
+		function insertQuoteToComposer(text) {
+			var bridge = chatBridge.current;
+			if (!bridge || !bridge.actions) return { ok: false, reason: "no-session" };
+			try {
+				if (typeof bridge.actions.insertQuote === "function" && bridge.actions.insertQuote(text) === true) {
+					return { ok: true };
+				}
+			} catch (e) { /* 宿主版本没有引用能力：退回普通文本 */ }
+			return insertToComposer(text);
+		}
+
+		/**
+		 * 新建对话：优先走 uiWorkspace.startSession，按当前工作区复用空白会话或新建，
+		 * 并把 prompt 写进草稿（不发送）。缺少该服务时返回 false，由调用方提示。
+		 */
+		function startNewChat(prompt) {
+			var ctx = shell.ctx;
+			var ui = ctx && typeof ctx.get === "function" ? ctx.get("uiWorkspace", false) : null;
+			if (!ui || typeof ui.startSession !== "function") return false;
+			var options;
+			if (prompt) options = { prompt: prompt, whenDraftExists: "replace" };
+			try {
+				ui.startSession(undefined, options);
+				return true;
+			} catch (e) {
+				return false;
+			}
 		}
 		//#endregion
 
@@ -1043,6 +1087,17 @@ window.__ModuleLoader__.load({
 					type: "button",
 					className: "mh-btn primary",
 					onClick: function () {
+						var quoted = insertQuoteToComposer(reference);
+						if (quoted.ok) { notify(t("quoted")); return; }
+						if (quoted.reason === "rejected" && quoted.hasBridge) { notify(t("rejected")); return; }
+						notify(copyText(reference) ? t("copied") + " · " + t("noSession") : t("noSession"));
+					},
+					children: t("quoteToChat"),
+				}, "quote"),
+				jsx.jsx("button", {
+					type: "button",
+					className: "mh-btn",
+					onClick: function () {
 						var written = insertToComposer(reference);
 						if (written.ok) { notify(t("inserted")); return; }
 						if (written.reason === "rejected" && written.hasBridge) { notify(t("rejected")); return; }
@@ -1050,6 +1105,14 @@ window.__ModuleLoader__.load({
 					},
 					children: t("toChat"),
 				}, "chat"),
+				jsx.jsx("button", {
+					type: "button",
+					className: "mh-btn",
+					onClick: function () {
+						notify(startNewChat(reference) ? t("newChatOpened") : t("newChatUnavailable"));
+					},
+					children: t("newChat"),
+				}, "new-chat"),
 				jsx.jsx("button", {
 					type: "button",
 					className: "mh-btn",
@@ -1132,6 +1195,7 @@ window.__ModuleLoader__.load({
 					jsx.jsx("p", { children: selected.summary || (selected.kind === "source" ? t("openInChat") : t("noSummary")) }),
 					jsx.jsx("div", { className: "mh-actions", children: actions }),
 					jsx.jsx("div", { className: "mh-note", children: t("chatHint") }),
+					jsx.jsx("div", { className: "mh-note", children: t("draftTarget") }),
 					jsx.jsx("div", { className: "mh-note", children: t("sessionScope") }),
 					toast ? jsx.jsx("div", { className: "mh-note", style: { color: "#297a5b" }, children: toast }) : null,
 				] }),
@@ -1183,6 +1247,19 @@ window.__ModuleLoader__.load({
 			var toast = toastTuple[0];
 			var setToast = toastTuple[1];
 
+			// 整期精选的引用文本：标题 + 区间 + 摘要 + 编号条目，模型能直接接着聊。
+			function digestReference() {
+				if (!detail) return "";
+				var lines = ["【消息订阅 · 每日精选】" + (detail.title || detail.id)];
+				if (detail.period_start) lines.push("区间：" + detail.period_start + " → " + (detail.period_end || ""));
+				if (detail.summary) lines.push(oneLine(detail.summary, 600));
+				(detail.items || []).forEach(function (entry, index) {
+					lines.push((index + 1) + ". " + (entry.title || "(无标题)") + (entry.url ? " — " + entry.url : ""));
+					if (entry.rationale) lines.push("   入选理由：" + oneLine(entry.rationale, 200));
+				});
+				return lines.join("\n");
+			}
+
 			return jsx.jsxs("div", { className: "mh-body digest", children: [
 				jsx.jsxs("div", { className: "mh-col", children: [
 					jsx.jsx("div", { className: "mh-col-head", children: [
@@ -1224,6 +1301,34 @@ window.__ModuleLoader__.load({
 								jsx.jsx("span", { children: fill(t("digestItems"), { n: (detail.items || []).length }) }),
 							] }),
 							detail.summary ? jsx.jsx("p", { children: detail.summary }) : null,
+							jsx.jsxs("div", { className: "mh-actions", children: [
+								jsx.jsx("button", {
+									type: "button",
+									className: "mh-btn primary",
+									onClick: function () {
+										var quoted = insertQuoteToComposer(digestReference());
+										setToast(quoted.ok ? t("quoted") : (quoted.reason === "rejected" ? t("rejected") : t("noSession")));
+									},
+									children: t("quoteToChat"),
+								}),
+								jsx.jsx("button", {
+									type: "button",
+									className: "mh-btn",
+									onClick: function () {
+										var written = insertToComposer(digestReference());
+										setToast(written.ok ? t("inserted") : (written.reason === "rejected" ? t("rejected") : t("noSession")));
+									},
+									children: t("toChat"),
+								}),
+								jsx.jsx("button", {
+									type: "button",
+									className: "mh-btn",
+									onClick: function () {
+										setToast(startNewChat(digestReference()) ? t("newChatOpened") : t("newChatUnavailable"));
+									},
+									children: t("newChat"),
+								}),
+							] }),
 							(detail.items || []).length === 0
 								? jsx.jsx("div", { className: "mh-note", style: { marginTop: 10 }, children: t("digestEmpty") })
 								: jsx.jsx("div", { style: { marginTop: 12 }, children: (detail.items || []).map(function (item, index) {
@@ -1241,6 +1346,15 @@ window.__ModuleLoader__.load({
 													className: "mh-btn",
 													onClick: function () { props.onSelect(selection); },
 													children: t("openInChat"),
+												}),
+												jsx.jsx("button", {
+													type: "button",
+													className: "mh-btn primary",
+													onClick: function () {
+														var quoted = insertQuoteToComposer(referenceFor(selection));
+														setToast(quoted.ok ? t("quoted") : (quoted.reason === "rejected" ? t("rejected") : t("noSession")));
+													},
+													children: t("quoteToChat"),
 												}),
 												jsx.jsx("button", {
 													type: "button",
@@ -1355,6 +1469,15 @@ window.__ModuleLoader__.load({
 					jsx.jsx("span", { className: "mh-sub", children: t("subtitle") }),
 					jsx.jsx("span", { className: "mh-spacer" }),
 					state.counts ? jsx.jsx("span", { className: "mh-sub", children: fill(t("itemsCount"), { n: intFmt(state.total) }) }) : null,
+					jsx.jsx("button", {
+						type: "button",
+						className: "mh-btn",
+						onClick: function () {
+							if (startNewChat("")) { hub.patch({ toast: "" }); return; }
+							hub.patch({ toast: t("newChatUnavailable") });
+						},
+						children: t("newChat"),
+					}),
 					jsx.jsx("button", { type: "button", className: "mh-btn", onClick: hub.refresh, children: t("refresh") }),
 				] }),
 				jsx.jsx(TabBar, { t: t, active: state.tab, onSelect: hub.setTab }),
@@ -1494,6 +1617,7 @@ window.__ModuleLoader__.load({
 		var inject = ["slots", "locale", "layout"];
 
 		function apply(ctx) {
+			shell.ctx = ctx;
 			var translate = function (key) {
 				try {
 					var value = ctx.locale && typeof ctx.locale.bind === "function" ? ctx.locale.bind(NS)(key) : undefined;
@@ -1556,7 +1680,10 @@ window.__ModuleLoader__.load({
 			NS: NS,
 			API_PREFIX: API_PREFIX,
 			chatBridge: chatBridge,
+			shell: shell,
 			insertToComposer: insertToComposer,
+			insertQuoteToComposer: insertQuoteToComposer,
+			startNewChat: startNewChat,
 			referenceFor: referenceFor,
 			oneLine: oneLine,
 			relTime: relTime,
